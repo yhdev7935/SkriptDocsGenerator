@@ -31,7 +31,7 @@ public class DocBuilder {
 
     @Nullable
     public static DocumentationElement generateElementDoc(SyntaxElementInfo syntaxElementInfo) throws Exception {
-        Class<?> clazz = syntaxElementInfo.c;
+        Class<?> clazz = syntaxElementInfo.elementClass;
         if (clazz.isAnnotationPresent(NoDoc.class))
             return null;
         DocumentationElement documentationElement = new DocumentationElement();
@@ -54,11 +54,11 @@ public class DocBuilder {
         if (clazz.isAnnotationPresent(Examples.class))
             documentationElement.setExamples(clazz.getAnnotation(Examples.class).value());
         if (clazz.isAnnotationPresent(Since.class)) {
-            documentationElement.setSince(new String[]{clazz.getAnnotation(Since.class).value()});
+            documentationElement.setSince(clazz.getAnnotation(Since.class).value());
         } else {
             SkriptAddon addon = getAddon(syntaxElementInfo);
             if (addon == null) {
-                throw new Exception("No addon found for syntax " + syntaxElementInfo.c.getName());
+                throw new Exception("No addon found for syntax " + syntaxElementInfo.elementClass.getName());
             } else {
                 documentationElement.setSince(new String[]{addon.plugin.getDescription().getVersion()});
             }
@@ -73,7 +73,7 @@ public class DocBuilder {
     public static EventDocumentationElement generateEventDoc(SkriptEventInfo<?> skriptEventInfo) throws Exception {
         SkriptAddon addon = getAddon(skriptEventInfo);
         if (addon == null)
-            throw new Exception("No addon found for event " + skriptEventInfo.c.getName());
+            throw new Exception("No addon found for event " + skriptEventInfo.elementClass.getName());
         String[] split = skriptEventInfo.originClassPath.split("\\.");
         String className = split[split.length - 1];
 
@@ -91,7 +91,7 @@ public class DocBuilder {
                 .setDescription(skriptEventInfo.getDescription())
                 .setPatterns(Arrays.copyOf(skriptEventInfo.patterns, skriptEventInfo.patterns.length))
                 .setExamples(skriptEventInfo.getExamples())
-                .setSince(new String[]{skriptEventInfo.getSince() == null ? addon.plugin.getDescription().getVersion() : skriptEventInfo.getSince()})
+                .setSince(skriptEventInfo.getSince() == null ? new String[]{addon.plugin.getDescription().getVersion()} : skriptEventInfo.getSince())
                 .setRequiredPlugins(skriptEventInfo.getRequiredPlugins())
                 .setCancellable(cancellable);
         return eventDocumentationElement;
@@ -240,7 +240,7 @@ public class DocBuilder {
 
     @Nullable
     public static SkriptAddon getAddon(SyntaxElementInfo<?> elementInfo) {
-        return getAddon(elementInfo.c);
+        return getAddon(elementInfo.elementClass);
     }
 
     @Nullable

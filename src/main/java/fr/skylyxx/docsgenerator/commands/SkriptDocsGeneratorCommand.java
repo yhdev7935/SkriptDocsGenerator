@@ -17,7 +17,26 @@ import java.util.List;
 
 public class SkriptDocsGeneratorCommand implements CommandExecutor, TabCompleter {
 
-    private final SkriptDocsGenerator skriptDocsGenerator = SkriptDocsGenerator.getPlugin(SkriptDocsGenerator.class);
+    private final SkriptDocsGenerator skriptDocsGenerator;
+    private final AddonDocGenerator addonDocGenerator;
+
+    @FunctionalInterface
+    interface AddonDocGenerator {
+        int generate(Pair<String, SkriptAddon> addon) throws Exception;
+    }
+
+    public SkriptDocsGeneratorCommand() {
+        this(SkriptDocsGenerator.getPlugin(SkriptDocsGenerator.class), DocBuilder::generateAddonDoc);
+    }
+
+    SkriptDocsGeneratorCommand(SkriptDocsGenerator skriptDocsGenerator) {
+        this(skriptDocsGenerator, DocBuilder::generateAddonDoc);
+    }
+
+    SkriptDocsGeneratorCommand(SkriptDocsGenerator skriptDocsGenerator, AddonDocGenerator addonDocGenerator) {
+        this.skriptDocsGenerator = skriptDocsGenerator;
+        this.addonDocGenerator = addonDocGenerator;
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -30,7 +49,7 @@ public class SkriptDocsGeneratorCommand implements CommandExecutor, TabCompleter
         if (args.length < 1) {
             for (SkriptAddon addon : addons) {
                 try {
-                    int syntaxes = DocBuilder.generateAddonDoc(new Pair<>(addon.plugin.getClass().getName(), addon));
+                    int syntaxes = addonDocGenerator.generate(new Pair<>(addon.source().getName(), addon));
                     sender.sendMessage(skriptDocsGenerator.getColored("&aSkriptDocsGenerator &6» &aDocumentation generated for &2" + addon.getName() + " &a(&e" + syntaxes + " syntaxes&a)"));
                 } catch (Exception e) {
                     sender.sendMessage(skriptDocsGenerator.getColored("&aSkriptDocsGenerator &6» &cAn error has occurred while generating documentation for &4" + addon.getName() + "&c: &4" + e.getMessage()));
@@ -46,7 +65,7 @@ public class SkriptDocsGeneratorCommand implements CommandExecutor, TabCompleter
                 sender.sendMessage(skriptDocsGenerator.getColored("&aSkriptDocsGenerator &6» &cNo addon with name &4" + args[0] + " &cwas found !"));
             } else {
                 try {
-                    int syntaxes = DocBuilder.generateAddonDoc(new Pair<>(addon.plugin.getClass().getName(), addon));
+                    int syntaxes = addonDocGenerator.generate(new Pair<>(addon.source().getName(), addon));
                     sender.sendMessage(skriptDocsGenerator.getColored("&aSkriptDocsGenerator &6» &aDocumentation generated for &2" + addon.getName() + " &a(&e" + syntaxes + " syntaxes&a)"));
                 } catch (Exception e) {
                     sender.sendMessage(skriptDocsGenerator.getColored("&aSkriptDocsGenerator &6» &cAn error has occurred while generating documentation for &4" + addon.getName() + "&c: &4" + e.getMessage()));
