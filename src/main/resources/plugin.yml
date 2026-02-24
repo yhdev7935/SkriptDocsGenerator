@@ -1,7 +1,7 @@
 name: SkriptDocsGenerator
 description: Generate documentation for your Skript addon !
 author: Skylyxx
-website: https://github.com/Skylyxx/SkriptDocsGenerator
+website: https://github.com/yhdev7935/SkriptDocsGenerator
 main: fr.skylyxx.docsgenerator.SkriptDocsGenerator
 version: @version@
 api-version: @apiVersion@
