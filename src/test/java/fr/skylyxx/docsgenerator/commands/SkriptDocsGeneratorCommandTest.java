@@ -1,7 +1,6 @@
 package fr.skylyxx.docsgenerator.commands;
 
 import ch.njol.skript.Skript;
-import ch.njol.skript.SkriptAddon;
 import fr.skylyxx.docsgenerator.SkriptDocsGenerator;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -17,6 +16,7 @@ import org.mockbukkit.mockbukkit.entity.PlayerMock;
 import org.mockbukkit.mockbukkit.plugin.PluginMock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
+import org.skriptlang.skript.addon.SkriptAddon;
 
 import java.util.Collections;
 import java.util.List;
@@ -59,13 +59,14 @@ class SkriptDocsGeneratorCommandTest {
 
     @Test
     void commandShowsNotFoundMessageForUnknownAddon() {
-        SkriptAddon coreAddon = Mockito.mock(SkriptAddon.class);
-        Mockito.when(coreAddon.getName()).thenReturn("Skript");
+        org.skriptlang.skript.Skript skriptInstance = Mockito.mock(org.skriptlang.skript.Skript.class);
+        Mockito.when(skriptInstance.name()).thenReturn("Skript");
+        Mockito.doReturn(SkriptDocsGenerator.class).when(skriptInstance).source();
+        Mockito.when(skriptInstance.addons()).thenReturn(Collections.emptyList());
 
         try (MockedStatic<Skript> skriptMock = Mockito.mockStatic(Skript.class)) {
             skriptMock.when(Skript::isAcceptRegistrations).thenReturn(false);
-            skriptMock.when(Skript::getAddons).thenReturn(Collections.emptyList());
-            skriptMock.when(Skript::getAddonInstance).thenReturn(coreAddon);
+            skriptMock.when(Skript::instance).thenReturn(skriptInstance);
 
             PluginCommand command = createCommand();
             boolean handled = command.execute(player, "skriptdocsgenerator", new String[]{"unknown-addon"});
@@ -78,18 +79,18 @@ class SkriptDocsGeneratorCommandTest {
     @Test
     void commandGeneratesDocumentationForKnownAddon() {
         SkriptAddon addon = Mockito.mock(SkriptAddon.class);
-        SkriptAddon coreAddon = Mockito.mock(SkriptAddon.class);
-        Mockito.when(addon.getName()).thenReturn("MyAddon");
+        org.skriptlang.skript.Skript skriptInstance = Mockito.mock(org.skriptlang.skript.Skript.class);
+        Mockito.when(addon.name()).thenReturn("MyAddon");
         Mockito.doReturn(SkriptDocsGeneratorCommandTest.class).when(addon).source();
-        Mockito.when(coreAddon.getName()).thenReturn("Skript");
-        Mockito.doReturn(SkriptDocsGenerator.class).when(coreAddon).source();
+        Mockito.when(skriptInstance.name()).thenReturn("Skript");
+        Mockito.doReturn(SkriptDocsGenerator.class).when(skriptInstance).source();
+        Mockito.when(skriptInstance.addons()).thenReturn(List.of(addon));
 
         try (MockedStatic<Skript> skriptMock = Mockito.mockStatic(Skript.class)) {
             skriptMock.when(Skript::isAcceptRegistrations).thenReturn(false);
-            skriptMock.when(Skript::getAddons).thenReturn(List.of(addon));
-            skriptMock.when(Skript::getAddonInstance).thenReturn(coreAddon);
+            skriptMock.when(Skript::instance).thenReturn(skriptInstance);
 
-            PluginCommand command = createCommand(pair -> 42);
+            PluginCommand command = createCommand((mainClass, addonInfo) -> 42);
             boolean handled = command.execute(player, "skriptdocsgenerator", new String[]{"MyAddon"});
 
             assertTrue(handled);
@@ -98,7 +99,7 @@ class SkriptDocsGeneratorCommandTest {
     }
 
     private PluginCommand createCommand() {
-        return createCommand(pair -> {
+        return createCommand((mainClass, addon) -> {
             throw new IllegalStateException("Default test doc generator should not be called in this scenario");
         });
     }
